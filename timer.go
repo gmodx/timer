@@ -3,7 +3,6 @@ package timer
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"reflect"
 	"runtime"
 	"time"
@@ -14,7 +13,7 @@ var (
 	ErrNotAFunction     = errors.New("only functions can be schedule into the job queue")
 )
 
-func Tick(delay time.Duration, d time.Duration, jobFunc interface{}, params ...interface{}) error {
+func Tick(delay time.Duration, d time.Duration, jobFunc interface{}, jobErrCallback func(error), params ...interface{}) error {
 	<-time.After(delay)
 
 	typ := reflect.TypeOf(jobFunc)
@@ -22,23 +21,18 @@ func Tick(delay time.Duration, d time.Duration, jobFunc interface{}, params ...i
 		return ErrNotAFunction
 	}
 
-	invokeAndLog(jobFunc, params)
 	ticker := time.NewTicker(d)
 	go func() {
-		for range ticker.C {
-			func() {
-				invokeAndLog(jobFunc, params)
-			}()
+		for ; true; <-ticker.C { // invoke immediately
+			_, err := invokeWithParams(jobFunc, params)
+			if err != nil {
+				jobErrCallback(fmt.Errorf("Call %v job error, err: %w", getFuncName(jobFunc), err))
+				continue
+			}
 		}
 	}()
-	return nil
-}
 
-func invokeAndLog(jobFunc interface{}, params []interface{}) {
-	_, err := invokeWithParams(jobFunc, params)
-	if err != nil {
-		slog.Error(fmt.Sprintf("Call %v job error, err: %v", getFuncName(jobFunc), err))
-	}
+	return nil
 }
 
 func invokeWithParams(jobFunc interface{}, params []interface{}) ([]reflect.Value, error) {

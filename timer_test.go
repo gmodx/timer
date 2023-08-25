@@ -12,7 +12,7 @@ func Test_Tick(t *testing.T) {
 		i++
 	}
 
-	err := Tick(0, 100*time.Millisecond, iPlusPlus)
+	err := Tick(0, 100*time.Millisecond, iPlusPlus, nil)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
