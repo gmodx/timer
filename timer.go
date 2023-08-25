@@ -22,21 +22,26 @@ func Tick(delay time.Duration, d time.Duration, jobFunc interface{}, params ...i
 		return ErrNotAFunction
 	}
 
+	invokeAndLog(jobFunc, params)
 	ticker := time.NewTicker(d)
 	go func() {
 		for range ticker.C {
 			func() {
-				_, err := callJobFuncWithParams(jobFunc, params)
-				if err != nil {
-					slog.Error(fmt.Sprintf("Call %v job error, err: %v", getFunctionName(jobFunc), err))
-				}
+				invokeAndLog(jobFunc, params)
 			}()
 		}
 	}()
 	return nil
 }
 
-func callJobFuncWithParams(jobFunc interface{}, params []interface{}) ([]reflect.Value, error) {
+func invokeAndLog(jobFunc interface{}, params []interface{}) {
+	_, err := invokeWithParams(jobFunc, params)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Call %v job error, err: %v", getFuncName(jobFunc), err))
+	}
+}
+
+func invokeWithParams(jobFunc interface{}, params []interface{}) ([]reflect.Value, error) {
 	f := reflect.ValueOf(jobFunc)
 	if len(params) != f.Type().NumIn() {
 		return nil, ErrParamsNotAdapted
@@ -48,6 +53,6 @@ func callJobFuncWithParams(jobFunc interface{}, params []interface{}) ([]reflect
 	return f.Call(in), nil
 }
 
-func getFunctionName(fn interface{}) string {
+func getFuncName(fn interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
 }
