@@ -1,4 +1,4 @@
-# Timer Package
+# Timer
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/gmodx/timer.svg)](https://pkg.go.dev/github.com/gmodx/timer)
 
